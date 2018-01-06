@@ -11,8 +11,8 @@ import pw.lictex.wallpaper.i.GLBitmap;
  */
 
 public class BitmapLayer extends Layer {
-    GLBitmap glBitmap;
-    boolean bitmapChanged = false;
+    private GLBitmap glBitmap;
+    private boolean bitmapChanged = false;
     private Bitmap bitmap;
 
     public BitmapLayer(Bitmap bitmap) {

@@ -11,9 +11,11 @@ import android.widget.TextView;
  * TODO: document your custom view class.
  */
 public class Slider extends RelativeLayout {
+    public static final int TAG_MIN = R.id.tag_min;
     SeekBar s;
     TextView n, v;
     OnSeekBarChange onSeekBarChange;
+    ValueParser valueParser;
 
     public Slider(Context context) {
         super(context);
@@ -30,6 +32,10 @@ public class Slider extends RelativeLayout {
         init();
     }
 
+    public void setValueParser(ValueParser valueParser) {
+        this.valueParser = valueParser;
+    }
+
     public void setOnSeekBarChangeListener(OnSeekBarChange onSeekBarChange) {
         this.onSeekBarChange = onSeekBarChange;
     }
@@ -43,6 +49,8 @@ public class Slider extends RelativeLayout {
         s.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                if (valueParser != null)
+                    setValue(progress);
                 if (onSeekBarChange != null) onSeekBarChange.onChange(Slider.this);
             }
 
@@ -66,11 +74,15 @@ public class Slider extends RelativeLayout {
         n.setText(s);
     }
 
-    public void setValue(String s) {
-        v.setText(s);
+    public void setValue(int progress) {
+        v.setText(valueParser.process(Slider.this, progress + (Integer) (getTag(TAG_MIN) == null ? 0 : getTag(TAG_MIN))));
     }
 
     public interface OnSeekBarChange {
         void onChange(Slider s);
+    }
+
+    public interface ValueParser {
+        String process(Slider s, int i);
     }
 }

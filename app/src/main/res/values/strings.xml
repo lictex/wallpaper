@@ -1,3 +1,4 @@
 <resources>
+    <item name="tag_min" type="id" />
     <string name="app_name">wallpaper*</string>
 </resources>

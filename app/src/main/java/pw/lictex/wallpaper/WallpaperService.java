@@ -103,11 +103,11 @@ public class WallpaperService extends GLWallpaperService {
 
     private void load(Intent intent) {
         sharedPreferences = getSharedPreferences("root", Context.MODE_PRIVATE);
-        x = new Default(sharedPreferences.getInt(Settings.TRANSLATE_EASE, 10));
-        s = new Default(sharedPreferences.getInt(Settings.SCALE_EASE, 12));
-        a = new Default(sharedPreferences.getInt(Settings.ALPHA_EASE, 8));
-        gyroS = sharedPreferences.getInt(Settings.GYRO_TRANSLATE_SPEED, 75);
-        touchS = sharedPreferences.getInt(Settings.TOUCH_TRANSLATE_SPEED, 50);
+        x = new Default(Settings.getInt(sharedPreferences, Settings.TRANSLATE_EASE));
+        s = new Default(Settings.getInt(sharedPreferences, Settings.SCALE_EASE));
+        a = new Default(Settings.getInt(sharedPreferences, Settings.ALPHA_EASE));
+        gyroS = Settings.getInt(sharedPreferences, Settings.GYRO_TRANSLATE_SPEED);
+        touchS = Settings.getInt(sharedPreferences, Settings.TOUCH_TRANSLATE_SPEED);
         if (intent != null && intent.getBooleanExtra("bitmapChanged", false))
             loadBitmap();
         if (bitmap != null)
@@ -115,11 +115,11 @@ public class WallpaperService extends GLWallpaperService {
     }
 
     private void returnToDefault() {
-        targetOffset = (int) (sharedPreferences.getInt(Settings.DEFAULT_POSITION, 78) / 100f * (Math.abs((bitmap.getWidth() * ((float) screenHeight / bitmap.getHeight())) - screenWidth)));
+        targetOffset = (int) (Settings.getInt(sharedPreferences, Settings.DEFAULT_POSITION) / 100f * (Math.abs((bitmap.getWidth() * ((float) screenHeight / bitmap.getHeight())) - screenWidth)));
     }
 
     private void loadBitmap() {
-        String string = sharedPreferences.getString(Settings.EXT_IMG_PATH, null);
+        String string = Settings.getString(sharedPreferences, Settings.EXT_IMG_PATH);
         try {
             InputStream inputStream;
             if (string != null) {
@@ -169,8 +169,8 @@ public class WallpaperService extends GLWallpaperService {
 
     private void onScreenOff() {
         if (pm.isScreenOn()) return;
-        targetAlpha = sharedPreferences.getInt(Settings.ALPHA_SCREEN_OFF, 0) / 100f;
-        targetScale = sharedPreferences.getInt(Settings.SCALE_SCREEN_OFF, 150) / 100f;
+        targetAlpha = Settings.getInt(sharedPreferences, Settings.ALPHA_SCREEN_OFF) / 100f;
+        targetScale = Settings.getInt(sharedPreferences, Settings.SCALE_SCREEN_OFF) / 100f;
         drawAlpha = targetAlpha;
         drawScale = targetScale;
         screenUnlocked = false;
@@ -181,23 +181,20 @@ public class WallpaperService extends GLWallpaperService {
             onScreenOff();
             return;
         }
-        // targetAlpha = sharedPreferences.getInt(Settings.ALPHA_SCREEN_OFF, 0) / 100f;
-        targetScale = sharedPreferences.getInt(Settings.SCALE_SCREEN_OFF, 150) / 100f;
-        //drawAlpha = targetAlpha;
+        targetScale = Settings.getInt(sharedPreferences, Settings.SCALE_SCREEN_OFF) / 100f;
         drawScale = targetScale;
-        //screenUnlocked = false;
     }
 
     private void onScreenOn() {
         if (screenUnlocked) return;
-        targetAlpha = sharedPreferences.getInt(Settings.ALPHA_SCREEN_ON, 64) / 100f;
-        targetScale = sharedPreferences.getInt(Settings.SCALE_SCREEN_ON, 125) / 100f;
+        targetAlpha = Settings.getInt(sharedPreferences, Settings.ALPHA_SCREEN_ON) / 100f;
+        targetScale = Settings.getInt(sharedPreferences, Settings.SCALE_SCREEN_ON) / 100f;
         screenUnlocked = false;
     }
 
     private void onScreenUnlock() {
-        targetAlpha = sharedPreferences.getInt(Settings.ALPHA_SCREEN_UNLOCKED, 100) / 100f;
-        targetScale = sharedPreferences.getInt(Settings.SCALE_SCREEN_UNLOCKED, 100) / 100f;
+        targetAlpha = Settings.getInt(sharedPreferences, Settings.ALPHA_SCREEN_UNLOCKED) / 100f;
+        targetScale = Settings.getInt(sharedPreferences, Settings.SCALE_SCREEN_UNLOCKED) / 100f;
         screenUnlocked = true;
     }
 
@@ -220,7 +217,6 @@ public class WallpaperService extends GLWallpaperService {
         @Override
         public void onTouchEvent(MotionEvent event) {
             super.onTouchEvent(event);
-            //继承了Activity的onTouchEvent方法，直接监听点击事件
             if (event.getAction() == MotionEvent.ACTION_DOWN) {
                 touchDown = true;
                 lastX = event.getX();
@@ -239,8 +235,8 @@ public class WallpaperService extends GLWallpaperService {
             super.onVisibilityChanged(visible);
             if (visible) {
                 Log.d("LW", "VSBTRU " + pm.isScreenOn());
-                sensorManager.registerListener(sensorEventListener, gyroSensor, sharedPreferences.getInt(Settings.GYRO_DELAY, 2));
-                int i = sharedPreferences.getInt(Settings.RETURN_DEFAULT_TIME, 5);
+                sensorManager.registerListener(sensorEventListener, gyroSensor, Settings.getInt(sharedPreferences, Settings.GYRO_DELAY));
+                int i = Settings.getInt(sharedPreferences, Settings.RETURN_DEFAULT_TIME);
                 if (screenOffTime != -1 && i != 61) {
                     Log.d("LW", "offTime " + String.valueOf((System.currentTimeMillis() - screenOffTime) / 1000));
                     if ((System.currentTimeMillis() - screenOffTime) / 1000 >= i) {

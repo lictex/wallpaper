@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -54,22 +55,94 @@ public class MainActivity extends AppCompatActivity {
         layout = findViewById(R.id.root);
         layout.removeAllViews();
         sharedPreferences = getSharedPreferences("root", Context.MODE_PRIVATE);
-        addSeekBar("位移速度(%)", 0, 200, Settings.GYRO_TRANSLATE_SPEED, 100);
-        addSeekBar("滑动位移速度(%)", 0, 200, Settings.TOUCH_TRANSLATE_SPEED, 75);
-        addSeekBar("平滑亮度", 0, 32, Settings.ALPHA_EASE, 10);
-        addSeekBar("平滑缩放", 0, 32, Settings.SCALE_EASE, 12);
-        addSeekBar("平滑位移", 0, 32, Settings.TRANSLATE_EASE, 8);
-        addSeekBar("传感器回报率(高->低)", 0, 3, Settings.GYRO_DELAY, 2);
+
+        addSeekBar("位移速度", 0, 200, Settings.GYRO_TRANSLATE_SPEED, new Slider.ValueParser() {
+            @Override
+            public String process(Slider s, int i) {
+                return i + "%";
+            }
+        });
+        addSeekBar("滑动位移速度", 0, 200, Settings.TOUCH_TRANSLATE_SPEED, new Slider.ValueParser() {
+            @Override
+            public String process(Slider s, int i) {
+                return i + "%";
+            }
+        });
+        addSeekBar("平滑亮度", 0, 32, Settings.ALPHA_EASE, null);
+        addSeekBar("平滑缩放", 0, 32, Settings.SCALE_EASE, null);
+        addSeekBar("平滑位移", 0, 32, Settings.TRANSLATE_EASE, null);
+        addSeekBar("传感器回报率", 0, 3, Settings.GYRO_DELAY, new Slider.ValueParser() {
+            @Override
+            public String process(Slider s, int i) {
+                switch (i) {
+                    case 0:
+                        return "最快";
+                    case 1:
+                        return "快";
+                    case 2:
+                        return "正常";
+                    default:
+                        return "慢";
+                }
+            }
+        });
         addSeparator();
-        addSeekBar("关屏亮度(%)", 0, 100, Settings.ALPHA_SCREEN_OFF, 0);
-        addSeekBar("关屏缩放(%)", 100, 200, Settings.SCALE_SCREEN_OFF, 150);
-        addSeekBar("锁屏亮度(%)", 0, 100, Settings.ALPHA_SCREEN_ON, 64);
-        addSeekBar("锁屏缩放(%)", 100, 200, Settings.SCALE_SCREEN_ON, 125);
-        addSeekBar("解锁亮度(%)", 0, 100, Settings.ALPHA_SCREEN_UNLOCKED, 100);
-        addSeekBar("解锁缩放(%)", 100, 200, Settings.SCALE_SCREEN_UNLOCKED, 100);
+        addSeekBar("关屏亮度", 0, 100, Settings.ALPHA_SCREEN_OFF, new Slider.ValueParser() {
+            @Override
+            public String process(Slider s, int i) {
+                return i + "%";
+            }
+        });
+        addSeekBar("关屏缩放", 100, 200, Settings.SCALE_SCREEN_OFF, new Slider.ValueParser() {
+            @Override
+            public String process(Slider s, int i) {
+                return i + "%";
+            }
+        });
+        addSeekBar("锁屏亮度", 0, 100, Settings.ALPHA_SCREEN_ON, new Slider.ValueParser() {
+            @Override
+            public String process(Slider s, int i) {
+                return i + "%";
+            }
+        });
+        addSeekBar("锁屏缩放", 100, 200, Settings.SCALE_SCREEN_ON, new Slider.ValueParser() {
+            @Override
+            public String process(Slider s, int i) {
+                return i + "%";
+            }
+        });
+        addSeekBar("解锁亮度", 0, 100, Settings.ALPHA_SCREEN_UNLOCKED, new Slider.ValueParser() {
+            @Override
+            public String process(Slider s, int i) {
+                return i + "%";
+            }
+        });
+        addSeekBar("解锁缩放", 100, 200, Settings.SCALE_SCREEN_UNLOCKED, new Slider.ValueParser() {
+            @Override
+            public String process(Slider s, int i) {
+                return i + "%";
+            }
+        });
         addSeparator();
-        addSeekBar("默认位置(%)", 0, 100, Settings.DEFAULT_POSITION, 78);
-        addSeekBar("关屏返回默认位置时间[61s=never](s)", 0, 61, Settings.RETURN_DEFAULT_TIME, 5);
+        addSeekBar("默认位置", 0, 100, Settings.DEFAULT_POSITION, new Slider.ValueParser() {
+            @Override
+            public String process(Slider s, int i) {
+                return i + "%";
+            }
+        });
+        addSeekBar("关屏返回默认位置时间", 0, 61, Settings.RETURN_DEFAULT_TIME, new Slider.ValueParser() {
+            @Override
+            public String process(Slider s, int i) {
+                switch (i) {
+                    case 61:
+                        return "禁用";
+                    case 0:
+                        return "立刻";
+                    default:
+                        return i + "s";
+                }
+            }
+        });
         addButton("加载图片", new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -116,18 +189,24 @@ public class MainActivity extends AppCompatActivity {
         startService(i);
     }
 
-    private void addSeekBar(String name, final int min, int max, final String tag, int def) {
+    private void addSeekBar(String name, final int min, int max, final String tag, @Nullable Slider.ValueParser valueParser) {
         Slider slider = new Slider(this);
         slider.setName(name);
         slider.setId(View.generateViewId());
         slider.getSeekBar().setMax(max - min);
-        int i = sharedPreferences.getInt(tag, def);
+        slider.setTag(Slider.TAG_MIN, min);
+        int i = Settings.getInt(sharedPreferences, tag);
+        slider.setValueParser(valueParser == null ? new Slider.ValueParser() {
+            @Override
+            public String process(Slider s, int i) {
+                return String.valueOf(i + min);
+            }
+        } : valueParser);
+        slider.setValue(slider.getSeekBar().getProgress());
         slider.getSeekBar().setProgress(i - min);
-        slider.setValue(String.valueOf(slider.getSeekBar().getProgress() + min));
         slider.setOnSeekBarChangeListener(new Slider.OnSeekBarChange() {
             @Override
             public void onChange(Slider s) {
-                s.setValue(String.valueOf(s.getSeekBar().getProgress() + min));
                 sharedPreferences.edit().putInt(tag, s.getSeekBar().getProgress() + min).apply();
             }
         });
