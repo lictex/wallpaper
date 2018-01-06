@@ -10,7 +10,7 @@ import javax.microedition.khronos.opengles.GL10;
 
 public abstract class Layer {
     protected Layer parent;
-    protected int offset;
+    protected float offset = 0;
     protected float scale = 1;
     protected float alpha = 1;
 
@@ -18,11 +18,11 @@ public abstract class Layer {
         this.parent = parent;
     }
 
-    public void render(GL10 gl, int w, int h) {
+    public void render(GL10 gl, float screenRatio) {
 
     }
 
-    public void setOffset(int offset) {
+    public void setOffset(float offset) {
         this.offset = offset;
     }
 

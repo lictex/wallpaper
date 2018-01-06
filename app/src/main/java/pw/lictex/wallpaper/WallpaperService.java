@@ -35,6 +35,7 @@ import pw.lictex.wallpaper.layer.BitmapLayer;
 
 public class WallpaperService extends GLWallpaperService {
     int screenWidth = 0, screenHeight = 0;
+    float screenRatio = 1;
     SensorManager sensorManager;
     Sensor gyroSensor;
     SharedPreferences sharedPreferences;
@@ -292,6 +293,7 @@ public class WallpaperService extends GLWallpaperService {
                     }
                 }
 
+                float screenBitmapWidth = (float) bitmap.getWidth() * (float) screenHeight / (float) bitmap.getHeight();
                 drawOffset = (int) x.nextDraw(targetOffset, drawOffset);
                 drawScale = s.nextDraw(targetScale, drawScale);
                 drawAlpha = a.nextDraw(targetAlpha, drawAlpha);
@@ -302,17 +304,20 @@ public class WallpaperService extends GLWallpaperService {
 
                 gl.glClearColor(0f, 0f, 0f, 1f);
                 gl.glClear(GL10.GL_COLOR_BUFFER_BIT | GL10.GL_DEPTH_BUFFER_BIT);
+                gl.glViewport(0, 0, screenWidth, screenHeight);
                 gl.glLoadIdentity();
+                gl.glScalef(1 / screenRatio, 1, 1);
 
                 layer.setScale(drawScale);
                 layer.setAlpha(drawAlpha);
-                layer.setOffset(drawOffset);
-                layer.render(gl, screenWidth, screenHeight);
+                layer.setOffset((float) drawOffset / screenBitmapWidth);
+                layer.render(gl, screenRatio);
             }
 
             public void onSurfaceChanged(GL10 gl, int width, int height) {
                 WallpaperService.this.screenWidth = width;
                 WallpaperService.this.screenHeight = height;
+                screenRatio = (float) width / (float) height;
             }
 
             public void onSurfaceCreated(GL10 gl, EGLConfig config) {

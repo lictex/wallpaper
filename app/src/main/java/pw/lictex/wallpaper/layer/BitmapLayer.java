@@ -27,22 +27,20 @@ public class BitmapLayer extends Layer {
     }
 
     @Override
-    public void render(GL10 gl, int w, int h) {
+    public void render(GL10 gl, float screenRatio) {
         if (glBitmap == null || bitmapChanged) {
             if (glBitmap != null) glBitmap.release(gl);
             glBitmap = new GLBitmap();
             glBitmap.loadGLTexture(gl, bitmap);
             bitmapChanged = false;
         }
-        int screenBitmapWidth = (int) ((float) bitmap.getWidth() * h / bitmap.getHeight());
         gl.glPushMatrix();
-        gl.glViewport(0, 0, screenBitmapWidth, h);
-        gl.glTranslatef(-(float) offset / (float) h, 0, 0);
-
-        float x = ((screenBitmapWidth - w) / 2f - offset) / h;
-        gl.glTranslatef(-x, 0, 0);
+        float bitmapRatio = (float) bitmap.getWidth() / (float) bitmap.getHeight();
+        gl.glScalef(bitmapRatio, 1, 1);
         gl.glScalef(scale, scale, scale);
-        gl.glTranslatef(x, 0, 0);
+        gl.glTranslatef(1f - 1f / bitmapRatio * screenRatio, 0, 0);
+
+        gl.glTranslatef(-offset * 2f, 0, 0);
 
         glBitmap.setColor(new float[]{1, 1, 1, alpha});
         glBitmap.draw(gl);
