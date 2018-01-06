@@ -25,8 +25,8 @@ import javax.microedition.khronos.opengles.GL10;
 
 import pw.lictex.wallpaper.ease.Default;
 import pw.lictex.wallpaper.ease.Ease;
-import pw.lictex.wallpaper.i.GLBitmap;
 import pw.lictex.wallpaper.i.GLWallpaperService;
+import pw.lictex.wallpaper.layer.BitmapLayer;
 
 /**
  * Created by kpx on 12.30-2017.
@@ -39,6 +39,8 @@ public class WallpaperService extends GLWallpaperService {
     Sensor gyroSensor;
     SharedPreferences sharedPreferences;
     long screenOffTime = -1;
+    KeyguardManager km;
+    PowerManager pm;
     private int targetOffset = 0, drawOffset = 0;
     private float targetScale = 1, drawScale = 1;
     private float targetAlpha = 1, drawAlpha = 1;
@@ -77,7 +79,7 @@ public class WallpaperService extends GLWallpaperService {
 
     private void modifyTargetOffset(float f) {
         targetOffset -= f * 8;
-        float v = (bitmap.getWidth() * ((float) screenHeight / bitmap.getHeight())) - screenWidth;
+        float v = (float) bitmap.getWidth() * (float) screenHeight / (float) bitmap.getHeight() - (float) screenWidth;
         if (targetOffset > v)
             targetOffset = (int) (v);
         if (targetOffset < 0)
@@ -88,6 +90,8 @@ public class WallpaperService extends GLWallpaperService {
     public void onCreate() {
         super.onCreate();
         load(null);
+        pm = (PowerManager) WallpaperService.this.getSystemService(Context.POWER_SERVICE);
+        km = (KeyguardManager) WallpaperService.this.getSystemService(Context.KEYGUARD_SERVICE);
     }
 
     @Override
@@ -152,9 +156,8 @@ public class WallpaperService extends GLWallpaperService {
             @Override
             public void onChange(ScreenStatusReceiver.Status s) {
                 switch (s) {
-                    case UNLOCK:
-                        Log.d("LW", "SCRULK");
-                        onScreenUnlock();
+                    case OFF:
+                        onScreenOff();
                         break;
                 }
             }
@@ -164,11 +167,24 @@ public class WallpaperService extends GLWallpaperService {
     }
 
     private void onScreenOff() {
+        if (pm.isScreenOn()) return;
         targetAlpha = sharedPreferences.getInt(Settings.ALPHA_SCREEN_OFF, 0) / 100f;
         targetScale = sharedPreferences.getInt(Settings.SCALE_SCREEN_OFF, 150) / 100f;
         drawAlpha = targetAlpha;
         drawScale = targetScale;
         screenUnlocked = false;
+    }
+
+    private void onBackground() {
+        if (!pm.isScreenOn()) {
+            onScreenOff();
+            return;
+        }
+        // targetAlpha = sharedPreferences.getInt(Settings.ALPHA_SCREEN_OFF, 0) / 100f;
+        targetScale = sharedPreferences.getInt(Settings.SCALE_SCREEN_OFF, 150) / 100f;
+        //drawAlpha = targetAlpha;
+        drawScale = targetScale;
+        //screenUnlocked = false;
     }
 
     private void onScreenOn() {
@@ -187,10 +203,8 @@ public class WallpaperService extends GLWallpaperService {
     class WallpaperEngine extends GLEngine {
         WallpaperRenderer renderer;
 
-        PowerManager pm;
         float lastX;
         boolean touchDown;
-        KeyguardManager km;
 
         @Override
         public void onCreate(SurfaceHolder surfaceHolder) {
@@ -198,8 +212,6 @@ public class WallpaperService extends GLWallpaperService {
             renderer = new WallpaperRenderer();
             setRenderer(renderer);
             setRenderMode(RENDERMODE_CONTINUOUSLY);
-            pm = (PowerManager) WallpaperService.this.getSystemService(Context.POWER_SERVICE);
-            km = (KeyguardManager) WallpaperService.this.getSystemService(Context.KEYGUARD_SERVICE);
             setTouchEventsEnabled(true);
         }
 
@@ -225,6 +237,7 @@ public class WallpaperService extends GLWallpaperService {
         public void onVisibilityChanged(boolean visible) {
             super.onVisibilityChanged(visible);
             if (visible) {
+                Log.d("LW", "VSBTRU " + pm.isScreenOn());
                 sensorManager.registerListener(sensorEventListener, gyroSensor, sharedPreferences.getInt(Settings.GYRO_DELAY, 2));
                 int i = sharedPreferences.getInt(Settings.RETURN_DEFAULT_TIME, 5);
                 if (screenOffTime != -1 && i != 61) {
@@ -237,13 +250,18 @@ public class WallpaperService extends GLWallpaperService {
                 onScreenOn();
                 if (!km.inKeyguardRestrictedInputMode()) {
                     onScreenUnlock();
+                } else {
+                    screenUnlocked = false;
+                    onScreenOn();
                 }
             } else {
                 Log.d("LW", "VSBFAL " + pm.isScreenOn());
                 if (!pm.isScreenOn()) {
                     screenOffTime = System.currentTimeMillis();
+                    onScreenOff();
+                } else {
+                    onBackground();
                 }
-                onScreenOff();
                 sensorManager.unregisterListener(sensorEventListener);
             }
         }
@@ -259,31 +277,37 @@ public class WallpaperService extends GLWallpaperService {
 
 
         public class WallpaperRenderer implements GLSurfaceView.Renderer {
-            GLBitmap glBitmap;
+            BitmapLayer layer = new BitmapLayer(bitmap);
+            int counter, counterx = 0;
 
             public void onDrawFrame(GL10 gl) {
+                if (!screenUnlocked) {
+                    if (counter < 4) {
+                        counter++;
+                    } else {
+                        counter = 0;
+                        if (!km.inKeyguardRestrictedInputMode()) {
+                            onScreenUnlock();
+                        }
+                    }
+                }
+
                 drawOffset = (int) x.nextDraw(targetOffset, drawOffset);
                 drawScale = s.nextDraw(targetScale, drawScale);
                 drawAlpha = a.nextDraw(targetAlpha, drawAlpha);
-                int actualBitmapWidth = (int) (bitmap.getWidth() * ((float) screenHeight / bitmap.getHeight()));
-
-                gl.glViewport(0, 0, actualBitmapWidth, screenHeight);
-                gl.glClearColor(0f, 0f, 0f, 1f);
-                gl.glClear(GL10.GL_COLOR_BUFFER_BIT | GL10.GL_DEPTH_BUFFER_BIT);
-                if (glBitmap == null || bitmapChanged) {
-                    if (glBitmap != null) glBitmap.release(gl);
-                    glBitmap = new GLBitmap();
-                    glBitmap.loadGLTexture(gl, bitmap);
+                if (bitmapChanged) {
+                    layer.change(gl, bitmap);
                     bitmapChanged = false;
                 }
-                gl.glLoadIdentity();
-                gl.glTranslatef(-drawOffset / 2 * (2f / screenHeight), 0, 0);
-                gl.glTranslatef(-((actualBitmapWidth - screenWidth) / 2 - drawOffset) / 2 * (2f / screenHeight), 0, 0);
-                gl.glScalef(drawScale, drawScale, drawScale);
-                gl.glTranslatef(((actualBitmapWidth - screenWidth) / 2 - drawOffset) / 2 * (2f / screenHeight), 0, 0);
 
-                glBitmap.setColor(new float[]{1, 1, 1, drawAlpha});
-                glBitmap.draw(gl);
+                gl.glClearColor(0f, 0f, 0f, 1f);
+                gl.glClear(GL10.GL_COLOR_BUFFER_BIT | GL10.GL_DEPTH_BUFFER_BIT);
+                gl.glLoadIdentity();
+
+                layer.setScale(drawScale);
+                layer.setAlpha(drawAlpha);
+                layer.setOffset(drawOffset);
+                layer.render(gl, screenWidth, screenHeight);
             }
 
             public void onSurfaceChanged(GL10 gl, int width, int height) {

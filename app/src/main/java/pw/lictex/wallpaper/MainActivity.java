@@ -56,10 +56,10 @@ public class MainActivity extends AppCompatActivity {
         sharedPreferences = getSharedPreferences("root", Context.MODE_PRIVATE);
         addSeekBar("位移速度(%)", 0, 200, Settings.GYRO_TRANSLATE_SPEED, 100);
         addSeekBar("滑动位移速度(%)", 0, 200, Settings.TOUCH_TRANSLATE_SPEED, 75);
-        addSeekBar("亮度减速器", 0, 32, Settings.ALPHA_EASE, 10);
-        addSeekBar("缩放减速器", 0, 32, Settings.SCALE_EASE, 12);
-        addSeekBar("位移减速器", 0, 32, Settings.TRANSLATE_EASE, 8);
-        addSeekBar("陀螺仪延迟", 0, 3, Settings.GYRO_DELAY, 2);
+        addSeekBar("平滑亮度", 0, 32, Settings.ALPHA_EASE, 10);
+        addSeekBar("平滑缩放", 0, 32, Settings.SCALE_EASE, 12);
+        addSeekBar("平滑位移", 0, 32, Settings.TRANSLATE_EASE, 8);
+        addSeekBar("传感器回报率(高->低)", 0, 3, Settings.GYRO_DELAY, 2);
         addSeparator();
         addSeekBar("关屏亮度(%)", 0, 100, Settings.ALPHA_SCREEN_OFF, 0);
         addSeekBar("关屏缩放(%)", 100, 200, Settings.SCALE_SCREEN_OFF, 150);
@@ -69,8 +69,8 @@ public class MainActivity extends AppCompatActivity {
         addSeekBar("解锁缩放(%)", 100, 200, Settings.SCALE_SCREEN_UNLOCKED, 100);
         addSeparator();
         addSeekBar("默认位置(%)", 0, 100, Settings.DEFAULT_POSITION, 78);
-        addSeekBar("屏幕关闭后返回默认位置[61s=never](s)", 0, 61, Settings.RETURN_DEFAULT_TIME, 5);
-        addButton("自定义图片", new View.OnClickListener() {
+        addSeekBar("关屏返回默认位置时间[61s=never](s)", 0, 61, Settings.RETURN_DEFAULT_TIME, 5);
+        addButton("加载图片", new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent();
