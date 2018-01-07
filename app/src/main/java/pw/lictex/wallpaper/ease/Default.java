@@ -5,26 +5,27 @@ package pw.lictex.wallpaper.ease;
  */
 
 public class Default implements Ease {
-    private float ppf = 0;
-    private float a;
+    private double ppf = 0;
+    private double a;
 
     public Default(float a) {
         this.a = a;
     }
 
     @Override
-    public float nextDraw(float target, float draw) {
+    public double nextDraw(double target, double draw, float delta) {
         if (a == 0) return target;
         ppf = (target - draw) / a;
-        float r = draw + ppf;
+        double r = draw + ppf * (delta / (1d / 60d * 1000d));
+        double r2 = r;
         if (draw < target) {
-            if (draw + ppf > target) {
+            if (r2 > target) {
                 r = target;
                 ppf = 0;
             }
         }
         if (draw > target) {
-            if (draw + ppf < target) {
+            if (r2 < target) {
                 r = target;
                 ppf = 0;
             }

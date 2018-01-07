@@ -40,7 +40,7 @@ public class BitmapLayer extends Layer {
         gl.glScalef(scale, scale, scale);
         gl.glTranslatef(1f - 1f / bitmapRatio * params.screenRatio, 0, 0);
 
-        gl.glTranslatef(-offset * 2f, 0, 0);
+        gl.glTranslatef((float) (-offset * 2d), 0, 0);
 
         glBitmap.setColor(new float[]{1, 1, 1, alpha});
         glBitmap.draw(gl);

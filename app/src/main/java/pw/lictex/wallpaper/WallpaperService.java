@@ -44,7 +44,7 @@ public class WallpaperService extends GLWallpaperService {
     long screenOffTime = -1;
     KeyguardManager km;
     PowerManager pm;
-    private int targetOffset = 0, drawOffset = 0;
+    private float targetOffset = 0, drawOffset = 0;
     private float targetScale = 1, drawScale = 1;
     private float targetAlpha = 1, drawAlpha = 1;
     private Bitmap bitmap;
@@ -268,13 +268,18 @@ public class WallpaperService extends GLWallpaperService {
                 }
             };
 
+            long lastDraw = -1;
+
             public void onDrawFrame(GL10 gl) {
                 if (!screenUnlocked && !km.inKeyguardRestrictedInputMode()) onScreenUnlock();
 
+                long currentDraw = System.nanoTime();
+                float delta = (currentDraw - lastDraw) * 0.000001f;
+
                 float screenBitmapWidth = (float) bitmap.getWidth() * (float) screenHeight / (float) bitmap.getHeight();
-                drawOffset = (int) x.nextDraw(targetOffset, drawOffset);
-                drawScale = s.nextDraw(targetScale, drawScale);
-                drawAlpha = a.nextDraw(targetAlpha, drawAlpha);
+                drawOffset = (float) x.nextDraw(targetOffset, drawOffset, delta);
+                drawScale = (float) s.nextDraw(targetScale, drawScale, delta);
+                drawAlpha = (float) a.nextDraw(targetAlpha, drawAlpha, delta);
                 if (bitmapChanged) {
                     for (Layer layer : layers) {
                         if (layer instanceof BitmapLayer) ((BitmapLayer) layer).change(gl, bitmap);
@@ -282,6 +287,7 @@ public class WallpaperService extends GLWallpaperService {
                     bitmapChanged = false;
                 }
 
+                lastDraw = currentDraw;
                 gl.glClearColor(0f, 0f, 0f, 1f);
                 gl.glClear(GL10.GL_COLOR_BUFFER_BIT | GL10.GL_DEPTH_BUFFER_BIT);
                 gl.glViewport(0, 0, screenWidth, screenHeight);
@@ -298,7 +304,7 @@ public class WallpaperService extends GLWallpaperService {
                         continue;
                     layer.setScale(drawScale);
                     layer.setAlpha(drawAlpha);
-                    layer.setOffset((float) drawOffset / screenBitmapWidth);
+                    layer.setOffset((double) drawOffset / (double) screenBitmapWidth);
                     layer.render(gl, params);
                 }
             }

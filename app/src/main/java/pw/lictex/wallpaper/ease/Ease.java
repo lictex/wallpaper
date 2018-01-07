@@ -5,5 +5,5 @@ package pw.lictex.wallpaper.ease;
  */
 
 public interface Ease {
-    float nextDraw(float target, float draw);
+    double nextDraw(double target, double draw, float delta);
 }
