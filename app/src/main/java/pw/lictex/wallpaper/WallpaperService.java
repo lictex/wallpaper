@@ -7,13 +7,9 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.hardware.Sensor;
-import android.hardware.SensorEvent;
-import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.opengl.GLSurfaceView;
 import android.os.PowerManager;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 
@@ -31,6 +27,8 @@ import pw.lictex.wallpaper.i.GLWallpaperService;
 import pw.lictex.wallpaper.layer.BitmapLayer;
 import pw.lictex.wallpaper.layer.FPSLayer;
 import pw.lictex.wallpaper.layer.Layer;
+import pw.lictex.wallpaper.sensor.AngleSensor;
+import pw.lictex.wallpaper.sensor.GyroscopeAngleSensor;
 
 /**
  * Created by kpx on 12.30-2017.
@@ -41,7 +39,7 @@ public class WallpaperService extends GLWallpaperService {
     int screenWidth = 0, screenHeight = 0;
     float screenRatio = 1;
     SensorManager sensorManager;
-    Sensor gyroSensor;
+    //Sensor gyroSensor;
     SharedPreferences sharedPreferences;
     long screenOffTime = -1;
     KeyguardManager km;
@@ -56,7 +54,16 @@ public class WallpaperService extends GLWallpaperService {
     private boolean screenUnlocked;
     private float gyroS = 100;
     private float touchS = 100;
-    private SensorEventListener sensorEventListener = new SensorEventListener() {
+    private AngleSensor angleSensor;
+    private AngleSensor.OnRefreshListener onRefreshListener = new AngleSensor.OnRefreshListener() {
+        @Override
+        public void onRefresh(float x, float y, float z) {
+            if (bitmap != null) {
+                modifyTargetOffset(y / 100f * gyroS);
+            }
+        }
+    };
+    /*private SensorEventListener sensorEventListener = new SensorEventListener() {
         long time = 0;
 
         @Override
@@ -79,7 +86,7 @@ public class WallpaperService extends GLWallpaperService {
 
 
         }
-    };
+    };*/
     private boolean bitmapChanged = true;
 
     private void modifyTargetOffset(float f) {
@@ -145,11 +152,13 @@ public class WallpaperService extends GLWallpaperService {
         loadBitmap();
 
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-        if (sensorManager != null) {
+        angleSensor = new GyroscopeAngleSensor(sensorManager);
+        angleSensor.setOnRefreshListener(onRefreshListener);
+        /*if (sensorManager != null) {
             gyroSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
         } else {
             throw new RuntimeException();
-        }
+        }*/
 
         ScreenStatusReceiver instance = new ScreenStatusReceiver();
         IntentFilter filter = new IntentFilter();
@@ -238,11 +247,9 @@ public class WallpaperService extends GLWallpaperService {
         public void onVisibilityChanged(boolean visible) {
             super.onVisibilityChanged(visible);
             if (visible) {
-                Log.d("LW", "VSBTRU " + pm.isScreenOn());
-                sensorManager.registerListener(sensorEventListener, gyroSensor, Settings.getInt(sharedPreferences, Settings.GYRO_DELAY));
+                sensorManager.registerListener(angleSensor.getListener(), angleSensor.getSensor(), Settings.getInt(sharedPreferences, Settings.GYRO_DELAY));
                 int i = Settings.getInt(sharedPreferences, Settings.RETURN_DEFAULT_TIME);
                 if (screenOffTime != -1 && i != 61) {
-                    Log.d("LW", "offTime " + String.valueOf((System.currentTimeMillis() - screenOffTime) / 1000));
                     if ((System.currentTimeMillis() - screenOffTime) / 1000 >= i) {
                         returnToDefault();
                     }
@@ -256,14 +263,13 @@ public class WallpaperService extends GLWallpaperService {
                     onScreenOn();
                 }
             } else {
-                Log.d("LW", "VSBFAL " + pm.isScreenOn());
                 if (!pm.isScreenOn()) {
                     screenOffTime = System.currentTimeMillis();
                     onScreenOff();
                 } else {
                     onBackground();
                 }
-                sensorManager.unregisterListener(sensorEventListener);
+                sensorManager.unregisterListener(angleSensor.getListener());
             }
         }
 
@@ -284,19 +290,9 @@ public class WallpaperService extends GLWallpaperService {
                     add(new FPSLayer());
                 }
             };
-            int counter, counterx = 0;
 
             public void onDrawFrame(GL10 gl) {
-                if (!screenUnlocked) {
-                    if (counter < 4) {
-                        counter++;
-                    } else {
-                        counter = 0;
-                        if (!km.inKeyguardRestrictedInputMode()) {
-                            onScreenUnlock();
-                        }
-                    }
-                }
+                if (!screenUnlocked && !km.inKeyguardRestrictedInputMode()) onScreenUnlock();
 
                 float screenBitmapWidth = (float) bitmap.getWidth() * (float) screenHeight / (float) bitmap.getHeight();
                 drawOffset = (int) x.nextDraw(targetOffset, drawOffset);
