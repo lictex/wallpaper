@@ -18,7 +18,7 @@ public abstract class Layer {
         this.parent = parent;
     }
 
-    public void render(GL10 gl, float screenRatio) {
+    public void render(GL10 gl, RenderParams params) {
 
     }
 
@@ -32,5 +32,10 @@ public abstract class Layer {
 
     public void setAlpha(float alpha) {
         this.alpha = alpha;
+    }
+
+    public static class RenderParams {
+        public int screenWidth, screenHeight;
+        public float screenRatio;
     }
 }

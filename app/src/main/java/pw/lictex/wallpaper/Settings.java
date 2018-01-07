@@ -24,6 +24,7 @@ public class Settings {
     public static final String DEFAULT_POSITION = "DEFAULT_POSITION";
     public static final String RETURN_DEFAULT_TIME = "RETURN_DEFAULT_TIME";
     public static final String EXT_IMG_PATH = "EXT_IMG_PATH";
+    public static final String SHOW_FRAME_DELAY = "SHOW_FRAME_DELAY";
     private static HashMap<String, Object> def = new HashMap<String, Object>() {{
         put(GYRO_TRANSLATE_SPEED, 75);
         put(TOUCH_TRANSLATE_SPEED, 50);
@@ -40,6 +41,7 @@ public class Settings {
         put(DEFAULT_POSITION, 66);
         put(RETURN_DEFAULT_TIME, 5);
         put(EXT_IMG_PATH, null);
+        put(SHOW_FRAME_DELAY, false);
     }};
 
     private Settings() {
@@ -47,6 +49,10 @@ public class Settings {
 
     public static int getInt(SharedPreferences sp, String tag) {
         return sp.getInt(tag, (Integer) def.get(tag));
+    }
+
+    public static boolean getBoolean(SharedPreferences sp, String tag) {
+        return sp.getBoolean(tag, (Boolean) def.get(tag));
     }
 
     public static String getString(SharedPreferences sp, String tag) {

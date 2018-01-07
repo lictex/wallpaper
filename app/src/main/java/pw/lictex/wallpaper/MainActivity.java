@@ -14,8 +14,10 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CompoundButton;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
+import android.widget.Switch;
 import android.widget.Toast;
 
 import java.io.FileOutputStream;
@@ -153,6 +155,7 @@ public class MainActivity extends AppCompatActivity {
                 startActivityForResult(intent, 1024);
             }
         });
+        addSwitch("显示FPS", Settings.SHOW_FRAME_DELAY);
     }
 
     @Override
@@ -226,6 +229,21 @@ public class MainActivity extends AppCompatActivity {
         b.setText(name);
         buttonR.setId(View.generateViewId());
         layout.addView(buttonR);
+    }
+
+    private void addSwitch(String name, final String tag) {
+        RelativeLayout switchR = (RelativeLayout) LayoutInflater.from(this).inflate(R.layout.switch_, null);
+        Switch b = switchR.findViewById(R.id.switch_);
+        b.setText(name);
+        switchR.setId(View.generateViewId());
+        b.setChecked(Settings.getBoolean(sharedPreferences, tag));
+        b.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                sharedPreferences.edit().putBoolean(tag, isChecked).apply();
+            }
+        });
+        layout.addView(switchR);
     }
 }
 

@@ -19,6 +19,8 @@ import android.view.SurfaceHolder;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -27,6 +29,8 @@ import pw.lictex.wallpaper.ease.Default;
 import pw.lictex.wallpaper.ease.Ease;
 import pw.lictex.wallpaper.i.GLWallpaperService;
 import pw.lictex.wallpaper.layer.BitmapLayer;
+import pw.lictex.wallpaper.layer.FPSLayer;
+import pw.lictex.wallpaper.layer.Layer;
 
 /**
  * Created by kpx on 12.30-2017.
@@ -274,7 +278,12 @@ public class WallpaperService extends GLWallpaperService {
 
 
         public class WallpaperRenderer implements GLSurfaceView.Renderer {
-            BitmapLayer layer = new BitmapLayer(bitmap);
+            List<Layer> layers = new ArrayList<Layer>() {
+                {
+                    add(new BitmapLayer(bitmap));
+                    add(new FPSLayer());
+                }
+            };
             int counter, counterx = 0;
 
             public void onDrawFrame(GL10 gl) {
@@ -294,7 +303,9 @@ public class WallpaperService extends GLWallpaperService {
                 drawScale = s.nextDraw(targetScale, drawScale);
                 drawAlpha = a.nextDraw(targetAlpha, drawAlpha);
                 if (bitmapChanged) {
-                    layer.change(gl, bitmap);
+                    for (Layer layer : layers) {
+                        if (layer instanceof BitmapLayer) ((BitmapLayer) layer).change(gl, bitmap);
+                    }
                     bitmapChanged = false;
                 }
 
@@ -304,10 +315,19 @@ public class WallpaperService extends GLWallpaperService {
                 gl.glLoadIdentity();
                 gl.glScalef(1 / screenRatio, 1, 1);
 
-                layer.setScale(drawScale);
-                layer.setAlpha(drawAlpha);
-                layer.setOffset((float) drawOffset / screenBitmapWidth);
-                layer.render(gl, screenRatio);
+                Layer.RenderParams params = new Layer.RenderParams() {{
+                    screenRatio = WallpaperService.this.screenRatio;
+                    screenHeight = WallpaperService.this.screenHeight;
+                    screenWidth = WallpaperService.this.screenWidth;
+                }};
+                for (Layer layer : layers) {
+                    if (layer instanceof FPSLayer && !Settings.getBoolean(sharedPreferences, Settings.SHOW_FRAME_DELAY))
+                        continue;
+                    layer.setScale(drawScale);
+                    layer.setAlpha(drawAlpha);
+                    layer.setOffset((float) drawOffset / screenBitmapWidth);
+                    layer.render(gl, params);
+                }
             }
 
             public void onSurfaceChanged(GL10 gl, int width, int height) {
