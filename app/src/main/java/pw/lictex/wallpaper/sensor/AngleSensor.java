@@ -9,33 +9,37 @@ import android.hardware.SensorManager;
  */
 
 public abstract class AngleSensor {
-    private Sensor sensor;
-    private SensorEventListener listener;
+    private Sensor[] sensors;
+    private SensorEventListener[] listeners;
     private OnRefreshListener onRefreshListener;
 
     public AngleSensor(SensorManager manager) {
-        sensor = initSensor(manager);
-        listener = initSensorListener();
+        sensors = initSensors(manager);
+        listeners = initSensorListeners();
     }
 
     public void setOnRefreshListener(OnRefreshListener onRefreshListener) {
         this.onRefreshListener = onRefreshListener;
     }
 
-    public Sensor getSensor() {
-        return sensor;
-    }
+    protected abstract SensorEventListener[] initSensorListeners();
 
-    protected abstract SensorEventListener initSensorListener();
-
-    protected abstract Sensor initSensor(SensorManager manager);
+    protected abstract Sensor[] initSensors(SensorManager manager);
 
     protected void onResult(float x, float y, float z) {
         if (onRefreshListener != null) onRefreshListener.onRefresh(x, y, z);
     }
 
-    public SensorEventListener getListener() {
-        return listener;
+    public void register(SensorManager sensorManager, int rate) {
+        for (int i = 0; i < sensors.length; i++) {
+            sensorManager.registerListener(listeners[i], sensors[i], rate);
+        }
+    }
+
+    public void unregister(SensorManager sensorManager) {
+        for (SensorEventListener eventListener : listeners) {
+            sensorManager.unregisterListener(eventListener);
+        }
     }
 
     public interface OnRefreshListener {

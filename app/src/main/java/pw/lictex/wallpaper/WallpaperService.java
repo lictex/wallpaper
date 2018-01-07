@@ -29,6 +29,7 @@ import pw.lictex.wallpaper.layer.FPSLayer;
 import pw.lictex.wallpaper.layer.Layer;
 import pw.lictex.wallpaper.sensor.AngleSensor;
 import pw.lictex.wallpaper.sensor.GyroscopeAngleSensor;
+import pw.lictex.wallpaper.sensor.RotationVectorAngleSensor;
 
 /**
  * Created by kpx on 12.30-2017.
@@ -39,7 +40,6 @@ public class WallpaperService extends GLWallpaperService {
     int screenWidth = 0, screenHeight = 0;
     float screenRatio = 1;
     SensorManager sensorManager;
-    //Sensor gyroSensor;
     SharedPreferences sharedPreferences;
     long screenOffTime = -1;
     KeyguardManager km;
@@ -63,30 +63,6 @@ public class WallpaperService extends GLWallpaperService {
             }
         }
     };
-    /*private SensorEventListener sensorEventListener = new SensorEventListener() {
-        long time = 0;
-
-        @Override
-        public void onSensorChanged(SensorEvent event) {
-            long timeElps = System.currentTimeMillis() - time;
-            time = System.currentTimeMillis();
-            float x = event.values[0];
-            float y = event.values[1];//横屏好像就不太对了
-            float z = event.values[2];
-            if (Math.abs(y) < 0.1)
-                return;//大概能避免漂移吧...
-            float angle = (float) Math.toDegrees(y) * ((timeElps > 100 ? 100 : timeElps) / 1000f);
-            if (bitmap != null) {
-                modifyTargetOffset(angle / 100f * gyroS);
-            }
-        }
-
-        @Override
-        public void onAccuracyChanged(Sensor sensor, int accuracy) {
-
-
-        }
-    };*/
     private boolean bitmapChanged = true;
 
     private void modifyTargetOffset(float f) {
@@ -119,6 +95,16 @@ public class WallpaperService extends GLWallpaperService {
         a = new Default(Settings.getInt(sharedPreferences, Settings.ALPHA_EASE));
         gyroS = Settings.getInt(sharedPreferences, Settings.GYRO_TRANSLATE_SPEED);
         touchS = Settings.getInt(sharedPreferences, Settings.TOUCH_TRANSLATE_SPEED);
+
+        sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        if (angleSensor != null) angleSensor.unregister(sensorManager);
+        if (Settings.getBoolean(sharedPreferences, Settings.USE_ROTATION_VECTOR)) {
+            angleSensor = new RotationVectorAngleSensor(sensorManager);
+        } else {
+            angleSensor = new GyroscopeAngleSensor(sensorManager);
+        }
+        angleSensor.setOnRefreshListener(onRefreshListener);
+
         if (intent != null && intent.getBooleanExtra("bitmapChanged", false))
             loadBitmap();
         if (bitmap != null)
@@ -150,15 +136,6 @@ public class WallpaperService extends GLWallpaperService {
     @Override
     public Engine onCreateEngine() {
         loadBitmap();
-
-        sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-        angleSensor = new GyroscopeAngleSensor(sensorManager);
-        angleSensor.setOnRefreshListener(onRefreshListener);
-        /*if (sensorManager != null) {
-            gyroSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
-        } else {
-            throw new RuntimeException();
-        }*/
 
         ScreenStatusReceiver instance = new ScreenStatusReceiver();
         IntentFilter filter = new IntentFilter();
@@ -247,7 +224,7 @@ public class WallpaperService extends GLWallpaperService {
         public void onVisibilityChanged(boolean visible) {
             super.onVisibilityChanged(visible);
             if (visible) {
-                sensorManager.registerListener(angleSensor.getListener(), angleSensor.getSensor(), Settings.getInt(sharedPreferences, Settings.GYRO_DELAY));
+                angleSensor.register(sensorManager, Settings.getInt(sharedPreferences, Settings.GYRO_DELAY));
                 int i = Settings.getInt(sharedPreferences, Settings.RETURN_DEFAULT_TIME);
                 if (screenOffTime != -1 && i != 61) {
                     if ((System.currentTimeMillis() - screenOffTime) / 1000 >= i) {
@@ -269,7 +246,7 @@ public class WallpaperService extends GLWallpaperService {
                 } else {
                     onBackground();
                 }
-                sensorManager.unregisterListener(angleSensor.getListener());
+                angleSensor.unregister(sensorManager);
             }
         }
 

@@ -15,8 +15,8 @@ public class GyroscopeAngleSensor extends AngleSensor {
     }
 
     @Override
-    public SensorEventListener initSensorListener() {
-        return new SensorEventListener() {
+    public SensorEventListener[] initSensorListeners() {
+        return new SensorEventListener[]{new SensorEventListener() {
             long time = 0;
 
             @Override
@@ -43,11 +43,11 @@ public class GyroscopeAngleSensor extends AngleSensor {
             public void onAccuracyChanged(Sensor sensor, int accuracy) {
 
             }
-        };
+        }};
     }
 
     @Override
-    public Sensor initSensor(SensorManager manager) {
-        return manager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
+    public Sensor[] initSensors(SensorManager manager) {
+        return new Sensor[]{manager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)};
     }
 }

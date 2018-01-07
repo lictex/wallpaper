@@ -73,6 +73,7 @@ public class MainActivity extends AppCompatActivity {
         addSeekBar("平滑亮度", 0, 32, Settings.ALPHA_EASE, null);
         addSeekBar("平滑缩放", 0, 32, Settings.SCALE_EASE, null);
         addSeekBar("平滑位移", 0, 32, Settings.TRANSLATE_EASE, null);
+        addSeparator();
         addSeekBar("传感器回报率", 0, 3, Settings.GYRO_DELAY, new Slider.ValueParser() {
             @Override
             public String process(Slider s, int i) {
@@ -88,6 +89,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+        addSwitch("使用旋转向量传感器", Settings.USE_ROTATION_VECTOR);
         addSeparator();
         addSeekBar("关屏亮度", 0, 100, Settings.ALPHA_SCREEN_OFF, new Slider.ValueParser() {
             @Override
