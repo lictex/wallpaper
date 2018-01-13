@@ -3,7 +3,6 @@ package pw.lictex.wallpaper;
 import android.app.KeyguardManager;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -136,50 +135,20 @@ public class WallpaperService extends GLWallpaperService {
     @Override
     public Engine onCreateEngine() {
         loadBitmap();
-
-        ScreenStatusReceiver instance = new ScreenStatusReceiver();
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(Intent.ACTION_SCREEN_ON);
-        filter.addAction(Intent.ACTION_SCREEN_OFF);
-        filter.addAction(Intent.ACTION_USER_PRESENT);
-        registerReceiver(instance, filter);
-        instance.setOnScreenChangeListener(new ScreenStatusReceiver.OnStatusChangeListener() {
-            @Override
-            public void onChange(ScreenStatusReceiver.Status s) {
-                switch (s) {
-                    case OFF:
-                        onScreenOff();
-                        break;
-                }
-            }
-        });
-
         return new WallpaperEngine();
     }
 
     private void onScreenOff() {
-        if (pm.isScreenOn()) return;
-        targetAlpha = Settings.getInt(sharedPreferences, Settings.ALPHA_SCREEN_OFF) / 100f;
-        targetScale = Settings.getInt(sharedPreferences, Settings.SCALE_SCREEN_OFF) / 100f;
-        drawAlpha = targetAlpha;
-        drawScale = targetScale;
-        screenUnlocked = false;
-    }
-
-    private void onBackground() {
-        if (!pm.isScreenOn()) {
-            onScreenOff();
-            return;
-        }
-        targetScale = Settings.getInt(sharedPreferences, Settings.SCALE_SCREEN_OFF) / 100f;
-        drawScale = targetScale;
-    }
-
-    private void onScreenOn() {
-        if (screenUnlocked) return;
+        drawAlpha = Settings.getInt(sharedPreferences, Settings.ALPHA_SCREEN_OFF) / 100f;
+        drawScale = Settings.getInt(sharedPreferences, Settings.SCALE_SCREEN_OFF) / 100f;
         targetAlpha = Settings.getInt(sharedPreferences, Settings.ALPHA_SCREEN_ON) / 100f;
         targetScale = Settings.getInt(sharedPreferences, Settings.SCALE_SCREEN_ON) / 100f;
         screenUnlocked = false;
+    }
+
+    private void onScreenOn() {
+        drawScale = Settings.getInt(sharedPreferences, Settings.SCALE_SCREEN_OFF) / 100f;
+        onScreenUnlock();
     }
 
     private void onScreenUnlock() {
@@ -232,19 +201,16 @@ public class WallpaperService extends GLWallpaperService {
                     }
                 }
                 screenOffTime = -1;
-                onScreenOn();
                 if (!km.inKeyguardRestrictedInputMode()) {
-                    onScreenUnlock();
+                    onScreenOn();
                 } else {
                     screenUnlocked = false;
-                    onScreenOn();
+                    onScreenOff();
                 }
             } else {
                 if (!pm.isScreenOn()) {
                     screenOffTime = System.currentTimeMillis();
                     onScreenOff();
-                } else {
-                    onBackground();
                 }
                 angleSensor.unregister(sensorManager);
             }
