@@ -26,16 +26,14 @@ public class GyroscopeAngleSensor extends AngleSensor {
                 float x = event.values[0];
                 float y = event.values[1];//横屏好像就不太对了
                 float z = event.values[2];
-                if (Math.abs(x) < 0.1)
-                    x = 0;//大概能避免漂移吧...
-                if (Math.abs(y) < 0.1)
-                    y = 0;
-                if (Math.abs(z) < 0.1)
-                    z = 0;
+
                 float v = (timeElps > 100 ? 100 : timeElps) / 1000f;
                 float angleX = (float) Math.toDegrees(x) * v;
                 float angleY = (float) Math.toDegrees(y) * v;
                 float angleZ = (float) Math.toDegrees(z) * v;
+                if (Math.abs(angleX) < 0.001) angleX = 0;
+                if (Math.abs(angleY) < 0.001) angleY = 0;
+                if (Math.abs(angleZ) < 0.001) angleZ = 0;
                 onResult(angleX, angleY, angleZ);
             }
 
