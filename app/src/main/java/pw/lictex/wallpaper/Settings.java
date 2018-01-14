@@ -40,7 +40,7 @@ public class Settings {
         put(SCALE_SCREEN_ON, 125);
         put(SCALE_SCREEN_UNLOCKED, 100);
         put(DEFAULT_POSITION, 66);
-        put(RETURN_DEFAULT_TIME, 5);
+        put(RETURN_DEFAULT_TIME, 0);
         put(EXT_IMG_PATH, null);
         put(SHOW_FRAME_DELAY, false);
         put(USE_ROTATION_VECTOR, false);

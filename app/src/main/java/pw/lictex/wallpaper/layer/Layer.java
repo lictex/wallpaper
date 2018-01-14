@@ -1,7 +1,5 @@
 package pw.lictex.wallpaper.layer;
 
-import android.support.annotation.Nullable;
-
 import javax.microedition.khronos.opengles.GL10;
 
 /**
@@ -9,17 +7,15 @@ import javax.microedition.khronos.opengles.GL10;
  */
 
 public abstract class Layer {
-    protected Layer parent;
     protected double offset = 0;
     protected float scale = 1;
     protected float alpha = 1;
+    protected BlendMode blendMode = BlendMode.Normal;
 
-    Layer(@Nullable Layer parent) {
-        this.parent = parent;
-    }
+    protected abstract void onRender(GL10 gl, RenderParams params);
 
-    public void render(GL10 gl, RenderParams params) {
-
+    public final void render(GL10 gl, RenderParams params) {
+        onRender(gl, params);
     }
 
     public void setOffset(double offset) {
@@ -32,6 +28,14 @@ public abstract class Layer {
 
     public void setAlpha(float alpha) {
         this.alpha = alpha;
+    }
+
+    public void setBlendMode(BlendMode blendMode) {
+        this.blendMode = blendMode;
+    }
+
+    public enum BlendMode {
+        Normal, Additive
     }
 
     public static class RenderParams {

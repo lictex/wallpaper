@@ -1,5 +1,10 @@
 package pw.lictex.wallpaper;
 
+import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.support.annotation.RawRes;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -17,5 +22,14 @@ public class Utils {
         while ((count = in.read(data, 0, BUFFER_SIZE)) != -1)
             outStream.write(data, 0, count);
         return outStream.toByteArray();
+    }
+
+    public static Bitmap bitmapFromResource(Context context, @RawRes int id) throws IOException {
+        return bitmapFromInputStream(context.getResources().openRawResourceFd(id).createInputStream());
+    }
+
+    public static Bitmap bitmapFromInputStream(InputStream inputStream) throws IOException {
+        byte[] bytes = InputStreamToByteArray(inputStream);
+        return BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
     }
 }

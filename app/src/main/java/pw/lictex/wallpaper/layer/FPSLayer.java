@@ -19,12 +19,8 @@ public class FPSLayer extends Layer {
     private int frames;
     private GLBitmap glBitmap = new GLBitmap();
 
-    public FPSLayer() {
-        super(null);
-    }
-
     @Override
-    public void render(GL10 gl, RenderParams params) {
+    protected void onRender(GL10 gl, RenderParams params) {
         frames++;
         if (System.currentTimeMillis() - time > 1000) {
             time = System.currentTimeMillis();

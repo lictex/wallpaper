@@ -5,7 +5,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.hardware.SensorManager;
 import android.opengl.GLSurfaceView;
 import android.os.PowerManager;
@@ -13,7 +12,6 @@ import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,6 +24,7 @@ import pw.lictex.wallpaper.i.GLWallpaperService;
 import pw.lictex.wallpaper.layer.BitmapLayer;
 import pw.lictex.wallpaper.layer.FPSLayer;
 import pw.lictex.wallpaper.layer.Layer;
+import pw.lictex.wallpaper.layer.SolidColorLayer;
 import pw.lictex.wallpaper.sensor.AngleSensor;
 import pw.lictex.wallpaper.sensor.GyroscopeAngleSensor;
 import pw.lictex.wallpaper.sensor.RotationVectorAngleSensor;
@@ -46,7 +45,8 @@ public class WallpaperService extends GLWallpaperService {
     private float targetOffset = 0, drawOffset = 0;
     private float targetScale = 1, drawScale = 1;
     private float targetAlpha = 1, drawAlpha = 1;
-    private Bitmap bitmap;
+    private ArrayList<Bitmap> bitmap = new ArrayList<>();
+    private int primaryIndex = 0;
     private Ease x;
     private Ease s;
     private Ease a;
@@ -57,7 +57,7 @@ public class WallpaperService extends GLWallpaperService {
     private AngleSensor.OnRefreshListener onRefreshListener = new AngleSensor.OnRefreshListener() {
         @Override
         public void onRefresh(float x, float y, float z) {
-            if (bitmap != null) {
+            if (bitmap.get(primaryIndex) != null) {
                 modifyTargetOffset(y / 100f * gyroS);
             }
         }
@@ -66,7 +66,7 @@ public class WallpaperService extends GLWallpaperService {
 
     private void modifyTargetOffset(float f) {
         targetOffset -= f * 8;
-        float v = (float) bitmap.getWidth() * (float) screenHeight / (float) bitmap.getHeight() - (float) screenWidth;
+        float v = (float) bitmap.get(primaryIndex).getWidth() * (float) screenHeight / (float) bitmap.get(primaryIndex).getHeight() - (float) screenWidth;
         if (targetOffset > v)
             targetOffset = (int) (v);
         if (targetOffset < 0)
@@ -106,25 +106,24 @@ public class WallpaperService extends GLWallpaperService {
 
         if (intent != null && intent.getBooleanExtra("bitmapChanged", false))
             loadBitmap();
-        if (bitmap != null)
+        if (bitmap.size() != 0 && bitmap.get(primaryIndex) != null)
             returnToDefault();
     }
 
     private void returnToDefault() {
-        targetOffset = (int) (Settings.getInt(sharedPreferences, Settings.DEFAULT_POSITION) / 100f * (Math.abs((bitmap.getWidth() * ((float) screenHeight / bitmap.getHeight())) - screenWidth)));
+        targetOffset = (int) (Settings.getInt(sharedPreferences, Settings.DEFAULT_POSITION) / 100f * (Math.abs((bitmap.get(primaryIndex).getWidth() * ((float) screenHeight / bitmap.get(primaryIndex).getHeight())) - screenWidth)));
     }
 
     private void loadBitmap() {
         String string = Settings.getString(sharedPreferences, Settings.EXT_IMG_PATH);
+        bitmap.clear();
         try {
-            InputStream inputStream;
             if (string != null) {
-                inputStream = openFileInput(string);
+                bitmap.add(Utils.bitmapFromInputStream(openFileInput(string)));
             } else {
-                inputStream = getResources().openRawResourceFd(R.raw.wp).createInputStream();
+                bitmap.add(Utils.bitmapFromResource(this, R.raw.wp));
             }
-            byte[] bytes = Utils.InputStreamToByteArray(inputStream);
-            bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+            bitmap.add(Utils.bitmapFromResource(this, R.raw.ol));
             returnToDefault();
         } catch (IOException e) {
             e.printStackTrace();
@@ -138,7 +137,7 @@ public class WallpaperService extends GLWallpaperService {
         return new WallpaperEngine();
     }
 
-    private void onScreenOff() {
+    private void showLockScreen() {
         drawAlpha = Settings.getInt(sharedPreferences, Settings.ALPHA_SCREEN_OFF) / 100f;
         drawScale = Settings.getInt(sharedPreferences, Settings.SCALE_SCREEN_OFF) / 100f;
         targetAlpha = Settings.getInt(sharedPreferences, Settings.ALPHA_SCREEN_ON) / 100f;
@@ -146,7 +145,7 @@ public class WallpaperService extends GLWallpaperService {
         screenUnlocked = false;
     }
 
-    private void onScreenOn() {
+    private void showUnlockScreen() {
         drawScale = Settings.getInt(sharedPreferences, Settings.SCALE_SCREEN_OFF) / 100f;
         onScreenUnlock();
     }
@@ -202,15 +201,15 @@ public class WallpaperService extends GLWallpaperService {
                 }
                 screenOffTime = -1;
                 if (!km.inKeyguardRestrictedInputMode()) {
-                    onScreenOn();
+                    showUnlockScreen();
                 } else {
                     screenUnlocked = false;
-                    onScreenOff();
+                    showLockScreen();
                 }
             } else {
                 if (!pm.isScreenOn()) {
                     screenOffTime = System.currentTimeMillis();
-                    onScreenOff();
+                    showLockScreen();
                 }
                 angleSensor.unregister(sensorManager);
             }
@@ -227,12 +226,9 @@ public class WallpaperService extends GLWallpaperService {
 
 
         public class WallpaperRenderer implements GLSurfaceView.Renderer {
-            List<Layer> layers = new ArrayList<Layer>() {
-                {
-                    add(new BitmapLayer(bitmap));
-                    add(new FPSLayer());
-                }
-            };
+            List<Layer> layers;
+            FPSLayer fpsLayer = new FPSLayer();
+            SolidColorLayer solidColorLayer = new SolidColorLayer();
 
             long lastDraw = -1;
 
@@ -242,14 +238,20 @@ public class WallpaperService extends GLWallpaperService {
                 long currentDraw = System.nanoTime();
                 float delta = (currentDraw - lastDraw) * 0.000001f;
 
-                float screenBitmapWidth = (float) bitmap.getWidth() * (float) screenHeight / (float) bitmap.getHeight();
+                float screenBitmapWidth = (float) bitmap.get(primaryIndex).getWidth() * (float) screenHeight / (float) bitmap.get(primaryIndex).getHeight();
                 drawOffset = (float) x.nextDraw(targetOffset, drawOffset, delta);
                 drawScale = (float) s.nextDraw(targetScale, drawScale, delta);
                 drawAlpha = (float) a.nextDraw(targetAlpha, drawAlpha, delta);
                 if (bitmapChanged) {
-                    for (Layer layer : layers) {
-                        if (layer instanceof BitmapLayer) ((BitmapLayer) layer).change(gl, bitmap);
-                    }
+                    layers = new ArrayList<Layer>() {
+                        {
+                            for (Bitmap b : bitmap) {
+                                add(new BitmapLayer(b) {{
+                                    setBlendMode(BlendMode.Additive);
+                                }});
+                            }
+                        }
+                    };
                     bitmapChanged = false;
                 }
 
@@ -266,19 +268,23 @@ public class WallpaperService extends GLWallpaperService {
                     screenWidth = WallpaperService.this.screenWidth;
                 }};
                 for (Layer layer : layers) {
-                    if (layer instanceof FPSLayer && !Settings.getBoolean(sharedPreferences, Settings.SHOW_FRAME_DELAY))
-                        continue;
                     layer.setScale(drawScale);
-                    layer.setAlpha(drawAlpha);
-                    layer.setOffset((double) drawOffset / (double) screenBitmapWidth);
+                    //layer.setAlpha(drawAlpha);
+                    layer.setOffset((double) drawOffset / (double) (screenBitmapWidth - screenWidth));
                     layer.render(gl, params);
                 }
+
+                solidColorLayer.setAlpha(1 - drawAlpha);
+                solidColorLayer.render(gl, params);
+                if (Settings.getBoolean(sharedPreferences, Settings.SHOW_FRAME_DELAY))
+                    fpsLayer.render(gl, params);
             }
 
             public void onSurfaceChanged(GL10 gl, int width, int height) {
-                WallpaperService.this.screenWidth = width;
-                WallpaperService.this.screenHeight = height;
+                screenWidth = width;
+                screenHeight = height;
                 screenRatio = (float) width / (float) height;
+                returnToDefault();
             }
 
             public void onSurfaceCreated(GL10 gl, EGLConfig config) {

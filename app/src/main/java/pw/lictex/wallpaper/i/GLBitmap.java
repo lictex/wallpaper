@@ -9,6 +9,8 @@ import java.nio.FloatBuffer;
 
 import javax.microedition.khronos.opengles.GL10;
 
+import pw.lictex.wallpaper.layer.Layer;
+
 /**
  * @author Zheng Haibo
  * @date 2014年10月20日 下午3:09:33
@@ -37,6 +39,7 @@ public class GLBitmap {
      */
     private int[] textures = new int[1];
     private float[] c = {1, 1, 1, 1};
+    private Layer.BlendMode blendMode = Layer.BlendMode.Normal;
 
     public void loadGLTexture(GL10 gl, Bitmap bitmap) {
 
@@ -76,9 +79,20 @@ public class GLBitmap {
         this.c = c;
     }
 
+    public void setBlendMode(Layer.BlendMode blendMode) {
+        this.blendMode = blendMode;
+    }
+
     public void draw(GL10 gl) {
         gl.glColor4f(c[0], c[1], c[2], c[3]);
-        gl.glBlendFunc(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
+        switch (blendMode) {
+            case Normal:
+                gl.glBlendFunc(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
+                break;
+            case Additive:
+                gl.glBlendFunc(GL10.GL_ONE, GL10.GL_ONE);
+                break;
+        }
         // bind the previously generated texture
         gl.glBindTexture(GL10.GL_TEXTURE_2D, textures[0]);
 

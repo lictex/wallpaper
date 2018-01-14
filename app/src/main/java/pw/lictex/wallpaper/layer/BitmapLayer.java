@@ -16,7 +16,6 @@ public class BitmapLayer extends Layer {
     private Bitmap bitmap;
 
     public BitmapLayer(Bitmap bitmap) {
-        super(null);
         this.bitmap = bitmap;
     }
 
@@ -27,7 +26,7 @@ public class BitmapLayer extends Layer {
     }
 
     @Override
-    public void render(GL10 gl, RenderParams params) {
+    protected void onRender(GL10 gl, RenderParams params) {
         if (glBitmap == null || bitmapChanged) {
             if (glBitmap != null) glBitmap.release(gl);
             glBitmap = new GLBitmap();
@@ -40,9 +39,10 @@ public class BitmapLayer extends Layer {
         gl.glScalef(scale, scale, scale);
         gl.glTranslatef(1f - 1f / bitmapRatio * params.screenRatio, 0, 0);
 
-        gl.glTranslatef((float) (-offset * 2d), 0, 0);
+        gl.glTranslatef((float) (-offset * (2d - params.screenRatio * 2f / bitmapRatio)), 0, 0);
 
         glBitmap.setColor(new float[]{1, 1, 1, alpha});
+        glBitmap.setBlendMode(blendMode);
         glBitmap.draw(gl);
         gl.glPopMatrix();
     }
