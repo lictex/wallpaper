@@ -11,6 +11,8 @@ import android.os.PowerManager;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -44,7 +46,7 @@ public class WallpaperService extends GLWallpaperService {
     PowerManager pm;
     private float targetOffset = 0, drawOffset = 0;
     private float targetScale = 1, drawScale = 1;
-    private float targetAlpha = 1, drawAlpha = 1;
+    private float targetBrightness = 1, drawBrightness = 1;
     private ArrayList<Bitmap> bitmap = new ArrayList<>();
     private int primaryIndex = 0;
     private Ease x;
@@ -119,11 +121,13 @@ public class WallpaperService extends GLWallpaperService {
         bitmap.clear();
         try {
             if (string != null) {
-                bitmap.add(Utils.bitmapFromInputStream(openFileInput(string)));
+                File parent = getDir(string, MODE_PRIVATE);
+                for (int i = 0; i < Settings.getInt(sharedPreferences, Settings.EXT_IMG_COUNT); i++) {
+                    bitmap.add(Utils.bitmapFromInputStream(new FileInputStream(new File(parent, String.valueOf(i)))));
+                }
             } else {
                 bitmap.add(Utils.bitmapFromResource(this, R.raw.wp));
             }
-            bitmap.add(Utils.bitmapFromResource(this, R.raw.ol));
             returnToDefault();
         } catch (IOException e) {
             e.printStackTrace();
@@ -138,9 +142,9 @@ public class WallpaperService extends GLWallpaperService {
     }
 
     private void showLockScreen() {
-        drawAlpha = Settings.getInt(sharedPreferences, Settings.ALPHA_SCREEN_OFF) / 100f;
+        drawBrightness = Settings.getInt(sharedPreferences, Settings.ALPHA_SCREEN_OFF) / 100f;
         drawScale = Settings.getInt(sharedPreferences, Settings.SCALE_SCREEN_OFF) / 100f;
-        targetAlpha = Settings.getInt(sharedPreferences, Settings.ALPHA_SCREEN_ON) / 100f;
+        targetBrightness = Settings.getInt(sharedPreferences, Settings.ALPHA_SCREEN_ON) / 100f;
         targetScale = Settings.getInt(sharedPreferences, Settings.SCALE_SCREEN_ON) / 100f;
         screenUnlocked = false;
     }
@@ -151,7 +155,7 @@ public class WallpaperService extends GLWallpaperService {
     }
 
     private void onScreenUnlock() {
-        targetAlpha = Settings.getInt(sharedPreferences, Settings.ALPHA_SCREEN_UNLOCKED) / 100f;
+        targetBrightness = Settings.getInt(sharedPreferences, Settings.ALPHA_SCREEN_UNLOCKED) / 100f;
         targetScale = Settings.getInt(sharedPreferences, Settings.SCALE_SCREEN_UNLOCKED) / 100f;
         screenUnlocked = true;
     }
@@ -241,7 +245,7 @@ public class WallpaperService extends GLWallpaperService {
                 float screenBitmapWidth = (float) bitmap.get(primaryIndex).getWidth() * (float) screenHeight / (float) bitmap.get(primaryIndex).getHeight();
                 drawOffset = (float) x.nextDraw(targetOffset, drawOffset, delta);
                 drawScale = (float) s.nextDraw(targetScale, drawScale, delta);
-                drawAlpha = (float) a.nextDraw(targetAlpha, drawAlpha, delta);
+                drawBrightness = (float) a.nextDraw(targetBrightness, drawBrightness, delta);
                 if (bitmapChanged) {
                     layers = new ArrayList<Layer>() {
                         {
@@ -269,12 +273,11 @@ public class WallpaperService extends GLWallpaperService {
                 }};
                 for (Layer layer : layers) {
                     layer.setScale(drawScale);
-                    //layer.setAlpha(drawAlpha);
                     layer.setOffset((double) drawOffset / (double) (screenBitmapWidth - screenWidth));
                     layer.render(gl, params);
                 }
 
-                solidColorLayer.setAlpha(1 - drawAlpha);
+                solidColorLayer.setAlpha(1 - drawBrightness);
                 solidColorLayer.render(gl, params);
                 if (Settings.getBoolean(sharedPreferences, Settings.SHOW_FRAME_DELAY))
                     fpsLayer.render(gl, params);

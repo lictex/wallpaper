@@ -24,6 +24,7 @@ public class Settings {
     public static final String DEFAULT_POSITION = "DEFAULT_POSITION";
     public static final String RETURN_DEFAULT_TIME = "RETURN_DEFAULT_TIME";
     public static final String EXT_IMG_PATH = "EXT_IMG_PATH";
+    public static final String EXT_IMG_COUNT = "EXT_IMG_COUNT";
     public static final String SHOW_FRAME_DELAY = "SHOW_FRAME_DELAY";
     public static final String USE_ROTATION_VECTOR = "USE_ROTATION_VECTOR";
     private static HashMap<String, Object> def = new HashMap<String, Object>() {{
@@ -42,6 +43,7 @@ public class Settings {
         put(DEFAULT_POSITION, 66);
         put(RETURN_DEFAULT_TIME, 0);
         put(EXT_IMG_PATH, null);
+        put(EXT_IMG_COUNT, 0);
         put(SHOW_FRAME_DELAY, false);
         put(USE_ROTATION_VECTOR, false);
     }};

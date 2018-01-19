@@ -20,6 +20,7 @@ import android.widget.RelativeLayout;
 import android.widget.Switch;
 import android.widget.Toast;
 
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -172,10 +173,10 @@ public class MainActivity extends AppCompatActivity {
                     try {
                         InputStream inputStream = getContentResolver().openInputStream(uri);
                         byte[] b = Utils.InputStreamToByteArray(inputStream);
-                        FileOutputStream fileOutputStream = openFileOutput("img", MODE_PRIVATE);
+                        FileOutputStream fileOutputStream = new FileOutputStream(new File(getDir("img", MODE_PRIVATE), "0"));
                         fileOutputStream.write(b);
                         fileOutputStream.close();
-                        sharedPreferences.edit().putString(Settings.EXT_IMG_PATH, "img").apply();
+                        sharedPreferences.edit().putString(Settings.EXT_IMG_PATH, "img").putInt(Settings.EXT_IMG_COUNT, 1).apply();
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
