@@ -251,7 +251,7 @@ public class WallpaperService extends GLWallpaperService {
                         {
                             for (Bitmap b : bitmap) {
                                 add(new BitmapLayer(b) {{
-                                    setBlendMode(BlendMode.Additive);
+                                    setBlendMode(BlendMode.Normal);
                                 }});
                             }
                         }

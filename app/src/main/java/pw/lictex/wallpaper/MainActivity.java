@@ -18,7 +18,6 @@ import android.widget.CompoundButton;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.Switch;
-import android.widget.Toast;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -148,14 +147,14 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
-        addButton("加载图片", new View.OnClickListener() {
+        addButton("添加图片", new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent();
                 intent.setAction(Intent.ACTION_GET_CONTENT);
                 intent.setType("image/*");
                 stopService(MainActivity.this.intent);
-                startActivityForResult(intent, 1024);
+                startActivityForResult(intent, 2048);
             }
         });
         addSwitch("显示FPS", Settings.SHOW_FRAME_DELAY);
@@ -165,23 +164,22 @@ public class MainActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         switch (requestCode) {
-            case 1024: {
+            case 2048: {
                 if (resultCode == RESULT_OK) {
                     bitmapChanged = true;
                     Uri uri = data.getData();
-                    Toast.makeText(this, uri.toString(), Toast.LENGTH_LONG).show();
                     try {
                         InputStream inputStream = getContentResolver().openInputStream(uri);
                         byte[] b = Utils.InputStreamToByteArray(inputStream);
-                        FileOutputStream fileOutputStream = new FileOutputStream(new File(getDir("img", MODE_PRIVATE), "0"));
+                        int anInt = Settings.getInt(sharedPreferences, Settings.EXT_IMG_COUNT);
+                        FileOutputStream fileOutputStream = new FileOutputStream(new File(getDir("img", MODE_PRIVATE), String.valueOf(anInt)));
                         fileOutputStream.write(b);
                         fileOutputStream.close();
-                        sharedPreferences.edit().putString(Settings.EXT_IMG_PATH, "img").putInt(Settings.EXT_IMG_COUNT, 1).apply();
+                        sharedPreferences.edit().putString(Settings.EXT_IMG_PATH, "img").putInt(Settings.EXT_IMG_COUNT, anInt + 1).apply();
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
                 }
-                break;
             }
         }
     }
