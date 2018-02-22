@@ -30,7 +30,7 @@ public class Settings {
     private static HashMap<String, Object> def = new HashMap<String, Object>() {{
         put(GYRO_TRANSLATE_SPEED, 75);
         put(TOUCH_TRANSLATE_SPEED, 50);
-        put(ALPHA_EASE, 8);
+        put(ALPHA_EASE, 24);
         put(SCALE_EASE, 12);
         put(TRANSLATE_EASE, 10);
         put(GYRO_DELAY, 2);

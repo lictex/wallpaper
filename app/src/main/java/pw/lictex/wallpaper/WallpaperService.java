@@ -165,6 +165,7 @@ public class WallpaperService extends GLWallpaperService {
 
         float lastX;
         boolean touchDown;
+        long lastDraw = -1;
 
         @Override
         public void onCreate(SurfaceHolder surfaceHolder) {
@@ -174,7 +175,6 @@ public class WallpaperService extends GLWallpaperService {
             setRenderMode(RENDERMODE_CONTINUOUSLY);
             setTouchEventsEnabled(true);
         }
-
 
         @Override
         public void onTouchEvent(MotionEvent event) {
@@ -196,6 +196,14 @@ public class WallpaperService extends GLWallpaperService {
         public void onVisibilityChanged(boolean visible) {
             super.onVisibilityChanged(visible);
             if (visible) {
+                screenOffTime = -1;
+                if (!km.inKeyguardRestrictedInputMode()) {
+                    screenUnlocked = true;
+                    showUnlockScreen();
+                } else {
+                    screenUnlocked = false;
+                    showLockScreen();
+                }
                 angleSensor.register(sensorManager, Settings.getInt(sharedPreferences, Settings.GYRO_DELAY));
                 int i = Settings.getInt(sharedPreferences, Settings.RETURN_DEFAULT_TIME);
                 if (screenOffTime != -1 && i != 61) {
@@ -203,17 +211,10 @@ public class WallpaperService extends GLWallpaperService {
                         returnToDefault();
                     }
                 }
-                screenOffTime = -1;
-                if (!km.inKeyguardRestrictedInputMode()) {
-                    showUnlockScreen();
-                } else {
-                    screenUnlocked = false;
-                    showLockScreen();
-                }
             } else {
+                lastDraw = -1;
                 if (!pm.isScreenOn()) {
                     screenOffTime = System.currentTimeMillis();
-                    showLockScreen();
                 }
                 angleSensor.unregister(sensorManager);
             }
@@ -228,19 +229,16 @@ public class WallpaperService extends GLWallpaperService {
             renderer = null;
         }
 
-
         public class WallpaperRenderer implements GLSurfaceView.Renderer {
             List<Layer> layers;
             FPSLayer fpsLayer = new FPSLayer();
             SolidColorLayer solidColorLayer = new SolidColorLayer();
 
-            long lastDraw = -1;
-
             public void onDrawFrame(GL10 gl) {
                 if (!screenUnlocked && !km.inKeyguardRestrictedInputMode()) onScreenUnlock();
 
                 long currentDraw = System.nanoTime();
-                float delta = (currentDraw - lastDraw) * 0.000001f;
+                float delta = (lastDraw > 0 ? (currentDraw - lastDraw) : 1) * 0.000001f;
 
                 float screenBitmapWidth = (float) bitmap.get(primaryIndex).getWidth() * (float) screenHeight / (float) bitmap.get(primaryIndex).getHeight();
                 drawOffset = (float) x.nextDraw(targetOffset, drawOffset, delta);
